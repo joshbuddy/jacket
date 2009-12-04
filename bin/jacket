@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby -rubygems
+
+require 'thin'
+require 'dirge'
+require ~'../lib/jacket'
+
+puts "Starting Jacket!"
+
+jacket = Jacket.new('localhost', 11300)
+jacket.server.start
