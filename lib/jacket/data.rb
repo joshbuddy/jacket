@@ -6,17 +6,19 @@ class Jacket
     
     Stat = Struct.new(:time, :data)
     
-    attr_reader :host, :port, :opts
+    attr_reader :host, :port, :opts, :tubes
     
     def initialize(host, port, opts = nil)
       @host, @port, @opts = host, port, opts
       @database_file = Digest::MD5.hexdigest("#{host}:#{port}") + ".db"
       @db = SQLite3::Database.new( File.join(Dir.tmpdir, @database_file) )
+      @tubes = []
     end
     
     def blocking_tubes
       beanstalk.list_tubes.values.flatten
     end
+    
     
     def init
       unless @initted
@@ -33,7 +35,7 @@ class Jacket
         @db.execute "create table if not exists #{global_stat_table}(data varchar(2000), created_at DATETIME)"
         @db.execute "create index if not exists created_at_idx on #{global_stat_table}(created_at)"
         beanstalk.list_tubes.values.flatten.each do |tube|
-          tube
+          @tubes << tube
           @db.execute "create table if not exists #{tube_stat_table(tube)}(data varchar(2000), created_at DATETIME)"
           @db.execute "create index if not exists created_at_idx on #{tube_stat_table(tube)}(created_at)"
         end
@@ -67,7 +69,7 @@ class Jacket
 
     def get_data_for_table(table)
       data = []
-      @db.execute("select * from #{table} order by created_at DESC limit 500").each do |row|
+      @db.execute("select * from #{table} order by created_at ASC limit 500").each do |row|
         data << Stat.new(Time.parse(row.last), JSON.parse(row.first))
       end
       data
@@ -77,15 +79,24 @@ class Jacket
       init do 
         jack = EM::Beanstalk.new(:host => @host, :port => @port)
         jack.list { |tubes|
-          @tubes_from_beanstalk = tubes
+          @tubes = tubes
+          @tubes.each {|tube|
+            data_time = Time.new
+            jack.stats(:tube, tube) do |tube_stats|
+              @db.query "insert into #{tube_stat_table(tube)} (data, created_at) values (?, ?)", tube_stats.to_json, data_time
+              if row = @db.query("select created_at from #{tube_stat_table(tube)} order by created_at limit 1 offset 500").next
+                @db.query "delete from #{tube_stat_table(tube)} where created_at >= ?", row.first
+              end
+            end
+          }
           jack.stats { |s|
+            
             data_time = Time.new
             @db.query "insert into #{global_stat_table} (data, created_at) values (?, ?)", s.to_json, data_time
             if row = @db.query("select created_at from #{global_stat_table} order by created_at limit 1 offset 500").next
               @db.query "delete from #{global_stat_table} where created_at >= ?", row.first
             end
             @last_time = data_time
-            jack.close
             EM.add_timer(interval) {update(interval) }
           }
         }

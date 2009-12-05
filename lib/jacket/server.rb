@@ -8,7 +8,6 @@ class Jacket
     end
     
     def call(env)
-      puts "called!!"
       builder = Rack::Builder.new do
         use Rack::Lint
         use Rack::Static, :urls => ["/resources"], :root => File.join(File.dirname(__FILE__), '..', '..')
@@ -21,7 +20,6 @@ class Jacket
       @server = self
       EM.run do
         jacket.data.update(5)
-        Thin::Logging.debug = true
         Thin::Server.start('0.0.0.0', 3000, self)
       end      
     end

@@ -1,10 +1,33 @@
 #!/usr/bin/env ruby -rubygems
 
-require 'thin'
-require 'dirge'
-require ~'../lib/jacket'
+require 'optparse'
+require File.join(File.dirname(__FILE__), '..', 'lib', 'jacket')
 
-puts "Starting Jacket!"
+options = {}
+options[:port] = 11300
+options[:host] = 'localhost'
 
-jacket = Jacket.new('localhost', 11300)
+parser = OptionParser.new do |opts|
+  opts.banner = "Usage: tokyo_cache_cow [options]"
+
+  opts.separator ""
+  opts.separator "Options:"
+
+  opts.on("-p[OPTIONAL]", "--port", "Port (default: #{options[:port]})") do |v|
+    options[:port] = v
+  end
+
+  opts.on("-h[OPTIONAL]", "--host", "Host (default: #{options[:host]})") do |v|
+    options[:host] = v
+  end
+
+  opts.on("-r[OPTIONAL]", "--reset", "Reset database") do |v|
+    options[:reset] = true
+  end
+
+  opts.on_tail("-h", "--help", "Show this help message.") { puts opts; exit }
+end
+parser.parse!(ARGV)
+
+jacket = Jacket.new(options.delete(:host), options.delete(:port), options.empty? ? nil : options)
 jacket.server.start

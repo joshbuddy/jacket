@@ -1,8 +1,10 @@
+require 'eventmachine'
 require 'em-beanstalk'
 require 'sqlite3'
 require 'json'
 require 'tmpdir'
 require 'beanstalk-client'
+require 'thin'
 
 $: << File.dirname(__FILE__)
 
@@ -23,9 +25,10 @@ class Jacket
   end
   
   def initialize(host, port, opts = nil)
+    puts "Starting Jacket! (#{host}:#{port})"
     @host = host
     @port = port
-    @data = Data.new(host, port)
+    @data = Data.new(host, port, opts)
   end
   
 end

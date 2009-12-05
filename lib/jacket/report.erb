@@ -25,7 +25,7 @@ float:left
   </tr>
 <% end %>
 </table>
-<div class="holder"><h2>Current jobs ready</h2><div id="current_jobs_ready_graph" style="width:600px;height:300px"></div></div><br clear="all">
+<div class="holder"><h3>Current jobs ready</h3><div id="current_jobs_ready_graph" style="width:600px;height:300px"></div></div><br clear="all">
 <script id="source" language="javascript" type="text/javascript">
 $(function () {
   var current_jobs_ready = <%=jacket.data.beanstalk_stats.map{|d| [d.time.to_i, d.data['current-jobs-ready']]}.to_json%>;
@@ -37,5 +37,20 @@ $(function () {
   });
 });
 </script>
+
+<% jacket.data.tubes.each do |tube| %>
+  <h2><%=tube%></h2>
+  <div class="holder"><h3>Current jobs ready</h3><div id="<%=tube%>_current_jobs_ready_graph" style="width:600px;height:300px"></div></div><br clear="all">
+  <script id="source" language="javascript" type="text/javascript">
+  $(function () {
+    $.plot($("#<%=tube%>_current_jobs_ready_graph"), [{name: 'current_jobs', data: <%=jacket.data.tube_stats(tube).map{|d| [d.time.to_i, d.data['current-jobs-ready']]}.to_json%>}], {
+      lines: { show: true, fill: true },
+      yaxis: { min: 0 },
+      xaxis: { tickDecimals: 0 }
+    });
+  });
+  </script>
+<% end %>
+
 </body>
 </html>
