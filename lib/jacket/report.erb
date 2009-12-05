@@ -10,14 +10,14 @@ float:left
 </head>
 <body>
 <h1>Beanstalk for localhost on port 3000</h1>
-<h2>Reported at <%=jacket.data.last.first%></h2>
+<h2>Reported at <%=jacket.data.beanstalk_stats.last.time%></h2>
       
 <% if jacket.last_time and Time.new - jacket.last_time > 6 %>
  <div class=error>Stats haven't been updated since <%=jacket.last_time%></div>
 <% end %>
 
 <table>
-<% jacket.data.last.last.to_a.each_slice(3) do |group| %>
+<% jacket.data.beanstalk_stats.last.data.to_a.each_slice(3) do |group| %>
   <tr>
   <% group.each do |r| %>
     <td><%=r.first%></td><td><%=r.last%></td>
@@ -28,7 +28,7 @@ float:left
 <div class="holder"><h2>Current jobs ready</h2><div id="current_jobs_ready_graph" style="width:600px;height:300px"></div></div><br clear="all">
 <script id="source" language="javascript" type="text/javascript">
 $(function () {
-  var current_jobs_ready = <%=jacket.data.map{|d| [d.first.to_i, d.last['current-jobs-ready']]}.to_json%>;
+  var current_jobs_ready = <%=jacket.data.beanstalk_stats.map{|d| [d.time.to_i, d.data['current-jobs-ready']]}.to_json%>;
   
   $.plot($("#current_jobs_ready_graph"), [{name: 'current_jobs', data: current_jobs_ready}], {
     lines: { show: true, fill: true },

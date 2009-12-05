@@ -20,15 +20,11 @@ class Jacket
     def start
       @server = self
       EM.run do
-        
-        EM.add_periodic_timer(5) do
-          jacket.tick
-        end
+        jacket.data.update(5)
         Thin::Logging.debug = true
         Thin::Server.start('0.0.0.0', 3000, self)
       end      
-      
     end
-    
   end
+  
 end
